@@ -1,6 +1,7 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
 
 app = FastAPI()
 
@@ -63,6 +64,25 @@ def test_database():
     response["database_name"] = "✅ Set" if os.getenv("DATABASE_NAME") else "❌ Not Set"
     
     return response
+
+# Contact model and endpoint
+class ContactMessage(BaseModel):
+    name: str
+    email: EmailStr
+    message: str
+
+@app.post("/api/contact")
+def contact(msg: ContactMessage):
+    # In a real portfolio, you might send an email. Here we'll just accept it.
+    # Optionally, store to DB if available
+    try:
+        from database import db, create_document
+        if db is not None:
+            create_document("contactmessage", msg.model_dump())
+    except Exception:
+        # Ignore DB errors to keep the endpoint responsive
+        pass
+    return {"ok": True}
 
 
 if __name__ == "__main__":
